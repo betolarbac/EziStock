@@ -1,12 +1,12 @@
 import { Telegraf } from 'telegraf';
-import { cadastrarProdutoIA } from './registrar';
 import { visualizarEstoque } from './estoque';
 import { atualizarQuantidade } from './quantidade';
 import { cancelarProduto } from './cancelar';
 import { vencendo } from './vencendo';
+import { cadastrarProdutoPorTexto } from './registrar';
 
 export function setupCommands(bot: Telegraf) {
-  bot.hears(/^Cadastrar:/i, cadastrarProdutoIA);
+  bot.hears(/^Cadastrar:/i, cadastrarProdutoPorTexto);
   bot.command('estoque', visualizarEstoque);
   bot.hears(/^Adicionar \d+ ao produto:/i, atualizarQuantidade);
   bot.hears(/^Remover \d+ do produto:/i, atualizarQuantidade);

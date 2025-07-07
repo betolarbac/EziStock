@@ -1,8 +1,10 @@
-import { Telegraf } from 'telegraf';
-import { config } from 'dotenv';
-import { prisma } from '../src/db/prisma';
-import { setupCommands } from './commands/index';
-import { iniciarCron } from './cron';
+import { Telegraf } from "telegraf";
+import { config } from "dotenv";
+import { prisma } from "../src/db/prisma";
+import { setupCommands } from "./commands/index";
+import { iniciarCron } from "./cron";
+import { handleAudio } from "./audioHandler";
+import { message } from "telegraf/filters";
 
 config();
 const bot = new Telegraf(process.env.BOT_TOKEN!);
@@ -19,5 +21,7 @@ bot.start(async (ctx) => {
 });
 
 setupCommands(bot);
+bot.on(message("voice"), handleAudio);
+
 iniciarCron(bot);
 bot.launch();
