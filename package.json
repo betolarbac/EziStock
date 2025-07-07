@@ -1,5 +1,5 @@
 {
-  "name": "assistente-estoque",
+  "name": "EziStock",
   "version": "1.0.0",
   "main": "bot/index.ts",
   "scripts": {
