@@ -5,6 +5,7 @@ import { setupCommands } from "./commands/index";
 import { iniciarCron } from "./cron";
 import { handleAudio } from "./audioHandler";
 import { message } from "telegraf/filters";
+import { startServer } from "./server";
 
 config();
 const bot = new Telegraf(process.env.BOT_TOKEN!);
@@ -24,4 +25,5 @@ setupCommands(bot);
 bot.on(message("voice"), handleAudio);
 
 iniciarCron(bot);
+startServer();
 bot.launch();

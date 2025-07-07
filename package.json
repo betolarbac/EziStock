@@ -4,8 +4,8 @@
   "main": "bot/index.ts",
   "scripts": {
     "dev": "ts-node-dev bot/index.ts",
-    "start": "node dist/index.js",
-    "build": "tsc"
+    "start": "node dist/bot/index.js",
+    "build": "tsc && prisma generate"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
