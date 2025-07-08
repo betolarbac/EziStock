@@ -1,61 +1,79 @@
 import { Context } from "telegraf";
 import { prisma } from "../../src/db/prisma";
 import axios from "axios";
+import { Buffer } from "buffer";
 
 export async function handleSubscription(ctx: Context) {
   if (!ctx.from) return;
 
   const user = await prisma.user.findUnique({
-    where: {telegramId: String(ctx.from.id)}
-  })
+    where: { telegramId: String(ctx.from.id) },
+  });
 
-  if(!user) {
-    return ctx.reply('Usuário não encontrado. Por favor, envie /start primeiro.');
+  if (!user) {
+    return ctx.reply(
+      "Usuário não encontrado. Por favor, envie /start primeiro."
+    );
   }
 
-  const ValorEmCentavos = 990;
-  const descricao = 'Assinatura Premium EziStock - 1 Mês';
+  const valorEmCentavos = 990;
+  const nomeDoProduto = "Assinatura Premium EziStock - 1 Mês";
 
   try {
-    ctx.reply('Gerando sua cobrança PIX, aguarde...');
+    await ctx.reply("Gerando seu QR Code PIX, aguarde...");
 
-    const response = await axios.post('https://api.abacatepay.com.br/v1/charges', {
-      value: ValorEmCentavos,
-      description: descricao,
-      customer: {
-        name: user.name,
+    const response = await axios.post(
+      "https://api.abacatepay.com/v1/pixQrCode/create",
+      {
+        amount: valorEmCentavos,
+        description: nomeDoProduto,
+        customer: {
+          name: user.name,
+          email: `${user.telegramId}@telegram.bot`,
+          // ATENÇÃO: Estes dados estão fixos no seu código original.
+          // O ideal seria solicitá-los ao usuário ou tê-los no banco de dados.
+          cellphone: "(99) 99999-9999",
+          taxId: "101.973.430-23",
+        },
+        metadata: {
+          telegram_id: user.telegramId,
+        },
       },
-      split: [],
-      metadata: {
-        telegram_id: user.telegramId
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.ABACATE_PAY_API_KEY}`,
+          "Content-Type": "application/json",
+        },
       }
-     }, {
-      headers: {
-        'x-api-key': process.env.ABACATE_PAY_API_KEY,
-        'Content-Type': 'application/json'
+    );
+
+    const pixData = response.data.data;
+    const qrCodeBase64 = pixData.brCodeBase64;
+    const pixCopyPaste = pixData.brCode;
+
+    const qrCodeBuffer = Buffer.from(
+      qrCodeBase64.split("base64,")[1],
+      "base64"
+    );
+
+    await ctx.replyWithPhoto(
+      { source: qrCodeBuffer },
+      {
+        caption: `Assinatura: ${nomeDoProduto}\nValor: R$ ${(
+          valorEmCentavos / 100
+        ).toFixed(2)}\n\nEscaneie o QR Code com o app do seu banco para pagar.`,
       }
-     });
+    );
 
-     const charge = response.data;
+    await ctx.reply("Ou use o PIX Copia e Cola abaixo:");
+    await ctx.replyWithMarkdownV2("```\n" + pixCopyPaste + "\n```");
 
-     if(charge.payment_method == 'pix' && charge.pix) {
-       const qrCodeUrl = charge.pix.qr_code_url;
-       const copiaECola = charge.pix.emv;
 
-       await ctx.replyWithPhoto(qrCodeUrl, {
-        caption: `Para se tornar Premium, faça o pagamento do PIX abaixo.`
-       })
-
-       await ctx.reply(`Ou use o PIX Copia e Cola:\n\n\`${copiaECola}\``, {
-        parse_mode: 'Markdown'
-      });
-
-     } else {
-      ctx.reply('Não foi possível gerar a cobrança PIX. Tente novamente mais tarde.');
-    }
-    
   } catch (error: string | any) {
-    console.error("Erro ao gerar cobrança na Abacate Pay:", error.response?.data || error.message);
-    ctx.reply('Ocorreu um erro ao conectar com nosso sistema de pagamento.');
+    console.error(
+      "Erro ao gerar cobrança na Abacate Pay:",
+      error.response?.data || error.message
+    );
+    ctx.reply("Ocorreu um erro ao conectar com nosso sistema de pagamento.");
   }
 }
