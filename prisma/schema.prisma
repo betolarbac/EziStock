@@ -12,14 +12,17 @@ model User {
   telegramId String    @unique
   name       String?
   products   Product[]
+
+  isPremium             Boolean   @default(false)
+  subscriptionExpiresAt DateTime?
 }
 
 model Product {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   name      String
   quantity  Int
   expiresAt DateTime?
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
 }
