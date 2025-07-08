@@ -25,5 +25,5 @@ setupCommands(bot);
 bot.on(message("voice"), handleAudio);
 
 iniciarCron(bot);
-startServer();
+startServer(bot);
 bot.launch();
