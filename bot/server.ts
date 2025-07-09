@@ -1,6 +1,7 @@
 import fastify from "fastify";
 import { Telegraf } from "telegraf";
 import { prisma } from "../src/db/prisma";
+import crypto from "crypto";
 
 const app = fastify();
 
@@ -10,9 +11,31 @@ app.get("/", async (request, reply) => {
 
 app.post("/webhook/abacatepay", async (request, reply) => {
   try {
+    const signature = request.headers["x-abacatepay-signature"] as string;
+
+    if (!signature) {
+      console.warn("Requisição de webhook recebida sem assinatura.");
+      return reply.status(401).send({ error: "Assinatura não encontrada." });
+    }
+
+    const hmac = crypto.createHmac(
+      "sha256",
+      process.env.ABACATE_PAY_WEBHOOK_SECRET!
+    );
+    const digest = hmac.update(JSON.stringify(request.body)).digest("hex");
+
+    const isSignatureValid = crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(digest)
+    );
+
+    if (!isSignatureValid) {
+      console.warn("Assinatura de webhook inválida!");
+      return reply.status(401).send({ error: "Assinatura inválida." });
+    }
+
     const event = request.body as any;
 
-    // Verifica se o evento é de cobrança paga
     if (event.event === "charge.paid") {
       const charge = event.data;
       const telegramId = charge.metadata?.telegram_id;
@@ -22,11 +45,9 @@ app.post("/webhook/abacatepay", async (request, reply) => {
         return reply.status(200).send({ received: true });
       }
 
-      // Calcula a data de expiração da assinatura (ex: 30 dias)
       const hoje = new Date();
       const dataExpiracao = new Date(hoje.setDate(hoje.getDate() + 30));
 
-      // Atualiza o usuário no banco de dados
       await prisma.user.update({
         where: { telegramId: String(telegramId) },
         data: {
@@ -35,7 +56,6 @@ app.post("/webhook/abacatepay", async (request, reply) => {
         },
       });
 
-      // Envia a mensagem de confirmação para o usuário
       const bot = (request.server as any).bot as Telegraf;
       await bot.telegram.sendMessage(
         telegramId,
@@ -43,7 +63,6 @@ app.post("/webhook/abacatepay", async (request, reply) => {
       );
     }
 
-    // Responde à Abacate Pay para confirmar o recebimento
     reply.status(200).send({ received: true });
   } catch (error) {
     console.error("Erro ao processar webhook da Abacate Pay:", error);
