@@ -11,27 +11,11 @@ app.get("/", async (request, reply) => {
 
 app.post("/webhook/abacatepay", async (request, reply) => {
   try {
-    const signature = request.headers["x-abacatepay-signature"] as string;
+    const receivedSecret = (request.query as any).webhookSecret;
 
-    if (!signature) {
-      console.warn("Requisição de webhook recebida sem assinatura.");
-      return reply.status(401).send({ error: "Assinatura não encontrada." });
-    }
-
-    const hmac = crypto.createHmac(
-      "sha256",
-      process.env.ABACATE_PAY_WEBHOOK_SECRET!
-    );
-    const digest = hmac.update(JSON.stringify(request.body)).digest("hex");
-
-    const isSignatureValid = crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(digest)
-    );
-
-    if (!isSignatureValid) {
-      console.warn("Assinatura de webhook inválida!");
-      return reply.status(401).send({ error: "Assinatura inválida." });
+    if (receivedSecret !== process.env.ABACATE_PAY_WEBHOOK_SECRET) {
+      console.warn("Secret do webhook inválido recebido na URL.");
+      return reply.status(401).send({ error: "Secret do webhook inválido" });
     }
 
     const event = request.body as any;
