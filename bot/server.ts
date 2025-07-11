@@ -1,7 +1,6 @@
 import fastify from "fastify";
 import { Telegraf } from "telegraf";
 import { prisma } from "../src/db/prisma";
-import crypto from "crypto";
 
 const app = fastify();
 
