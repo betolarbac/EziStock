@@ -60,7 +60,7 @@ export async function handleAudio(ctx: Context) {
     ctx.reply(`Eu entendi: "${transcription}".\n\nProcessando com a IA...`);
 
    
-    await processarCadastroComIA(transcription, user.id, ctx);
+    await processarCadastroComIA(transcription, user, ctx);
 
   } catch (error: string | any) {
     console.error('Erro no processamento do áudio com a Gladia:', error.response?.data || error.message);

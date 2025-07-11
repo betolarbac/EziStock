@@ -1,14 +1,28 @@
 import { Context } from "telegraf";
 import { prisma } from "../../src/db/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { User } from "@prisma/client";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function processarCadastroComIA(
   texto: string,
-  userId: string,
+  user: User,
   ctx: Context
 ) {
+
+  const isPremium = user.isPremium && user.subscriptionExpiresAt && user.subscriptionExpiresAt > new Date();
+
+  if(!isPremium) {
+    const contagemProdutos = await prisma.product.count({
+      where: {userId: user.id}
+    })
+
+    if(contagemProdutos >= 10) {
+      return ctx.reply("Você atingiu o limite de 10 produtos para o plano gratuito.\n\nPara cadastrar produtos ilimitados e usar o registro por áudio, considere se tornar Premium. Digite /assinar para saber mais.");
+    }
+  }
+
   const prompt = `
     Analise o texto do usuário para identificar um ou mais produtos, suas quantidades e datas de validade.
     A data de hoje é: ${new Date().toLocaleDateString("pt-BR", {
@@ -66,7 +80,7 @@ export async function processarCadastroComIA(
           name: produto.name,
           quantity: produto.quantity,
           expiresAt: expirationData,
-          userId: userId,
+          userId: user.id,
         },
       });
       produtosCadastrados.push(produto.name);
@@ -105,7 +119,7 @@ export async function cadastrarProdutoPorTexto(ctx: Context) {
   ctx.reply("Processando seu pedido com a IA, aguarde um instante...");
 
   try {
-    await processarCadastroComIA(textoUsuario, user.id, ctx);
+    await processarCadastroComIA(textoUsuario, user, ctx);
   } catch (error) {
     ctx.reply(
       "Ocorreu um erro ao tentar entender sua mensagem. Por favor, tente novamente."
