@@ -10,18 +10,24 @@ export async function processarCadastroComIA(
   user: User,
   ctx: Context
 ) {
+  const isPremium =
+    user.isPremium &&
+    user.subscriptionExpiresAt &&
+    user.subscriptionExpiresAt > new Date();
 
-  const isPremium = user.isPremium && user.subscriptionExpiresAt && user.subscriptionExpiresAt > new Date();
-
-  if(!isPremium) {
+  if (!isPremium) {
     const contagemProdutos = await prisma.product.count({
-      where: {userId: user.id}
-    })
+      where: { userId: user.id },
+    });
 
-    if(contagemProdutos >= 10) {
-      return ctx.reply("Você atingiu o limite de 10 produtos para o plano gratuito.\n\nPara cadastrar produtos ilimitados e usar o registro por áudio, considere se tornar Premium. Digite /assinar para saber mais.");
+    if (contagemProdutos >= 10) {
+      return ctx.reply(
+        "Você atingiu o limite de 10 produtos para o plano gratuito.\n\nPara cadastrar produtos ilimitados e usar o registro por áudio, considere se tornar Premium. Digite /assinar para saber mais."
+      );
     }
   }
+
+  ctx.reply("Processando seu pedido com a IA, aguarde um instante...");
 
   const prompt = `
     Analise o texto do usuário para identificar um ou mais produtos, suas quantidades e datas de validade.
@@ -116,7 +122,6 @@ export async function cadastrarProdutoPorTexto(ctx: Context) {
   }
 
   const textoUsuario = ctx.message.text.replace(/^Cadastrar:/i, "").trim();
-  ctx.reply("Processando seu pedido com a IA, aguarde um instante...");
 
   try {
     await processarCadastroComIA(textoUsuario, user, ctx);
