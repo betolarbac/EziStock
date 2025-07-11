@@ -33,7 +33,7 @@ export async function vencendo(ctx: Context) {
       (p) =>
         `🧨 ${p.name} - ${
           p.quantity
-        } un - Vence: ${p.expiresAt?.toLocaleDateString()}`
+        } un - Vence: ${p.expiresAt?.toLocaleDateString('pt-BR')}`
     )
     .join("\n");
 

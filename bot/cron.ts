@@ -18,7 +18,7 @@ export function iniciarCron(bot: Telegraf) {
     for (const produto of produtos) {
       await bot.telegram.sendMessage(
         Number(produto.user.telegramId),
-        `⚠️ O produto *${produto.name}* vence em breve (${produto.expiresAt?.toLocaleDateString()})!`,
+        `⚠️ O produto *${produto.name}* vence em breve (${produto.expiresAt?.toLocaleDateString('pt-BR')})!`,
         { parse_mode: 'Markdown' }
       );
     }

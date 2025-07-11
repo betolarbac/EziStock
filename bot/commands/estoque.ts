@@ -15,7 +15,7 @@ export async function visualizarEstoque(ctx: Context) {
   }
 
   const lista = user.products.map((p) =>
-    `📦 ${p.name} - ${p.quantity} un - Vence: ${p.expiresAt?.toLocaleDateString() ?? 'Sem data'}`).join('\n');
+    `📦 ${p.name} - ${p.quantity} un - Vence: ${p.expiresAt?.toLocaleDateString('pt-BR') ?? 'Sem data'}`).join('\n');
 
   ctx.reply(lista);
 }
